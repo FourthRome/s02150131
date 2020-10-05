@@ -7,7 +7,7 @@ namespace ConsoleInterface
     {
         static void Main(string[] args)
         {
-            ImageRecognizer.Recognize(args);
+            MnistRecognizer.Recognize("image_2");
         }
     }
 }

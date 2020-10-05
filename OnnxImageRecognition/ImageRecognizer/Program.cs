@@ -11,11 +11,20 @@ using System.Collections.Generic;
 
 namespace ImageRecognizer
 {
-    public class ImageRecognizer
+    public class MnistRecognizer
     {
         public static void Recognize(string path)
         {
-            using var image = Image.Load<Rgb24>(path);
+            Image<Rgb24> image = null;
+            try
+            {
+                image = Image.Load<Rgb24>(path);
+            } catch(Exception e)
+            {
+                Console.WriteLine($"Could not read image \"{path}\": \n{e.Message}");
+                return;
+            }
+
 
             const int TargetWidth = 28;
             const int TargetHeight = 28;
@@ -34,8 +43,6 @@ namespace ImageRecognizer
 
             // Перевод пикселов в тензор и нормализация
             var input = new DenseTensor<float>(new[] { 1, 1, TargetHeight, TargetWidth });
-            var mean = new[] { 0.485f, 0.456f, 0.406f };
-            var stddev = new[] { 0.229f, 0.224f, 0.225f };
             for (int y = 0; y < TargetHeight; y++)
             {
                 Span<Rgb24> pixelSpan = image.GetPixelRowSpan(y);
@@ -45,7 +52,7 @@ namespace ImageRecognizer
                 }
             }
 
-            // Подготавливаем входные данные нейросети. Имя input3 задано в файле модели
+            // Подготавливаем входные данные нейросети. Имя Input3 задано в файле модели
             var inputs = new List<NamedOnnxValue>
             {
                 NamedOnnxValue.CreateFromTensor("Input3", input)
