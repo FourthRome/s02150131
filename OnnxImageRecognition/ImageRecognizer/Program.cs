@@ -30,7 +30,7 @@ namespace ImageRecognizer
             const int TargetWidth = 28;
             const int TargetHeight = 28;
 
-            // Изменяем размер картинки до 28 x 28
+            // Changing image size and making it grayscale
             image.Mutate(x =>
             {
                 x.Resize(new ResizeOptions
@@ -38,11 +38,10 @@ namespace ImageRecognizer
                     Size = new Size(TargetWidth, TargetHeight),
                     Mode = ResizeMode.Crop // Сохраняем пропорции обрезая лишнее
                 });
-
                 x.Grayscale();
             });
 
-            // Перевод пикселов в тензор и нормализация
+            // Converting to a tensor and normalization
             var input = new DenseTensor<float>(new[] { 1, 1, TargetHeight, TargetWidth });
             for (int y = 0; y < TargetHeight; y++)
             {
@@ -53,23 +52,24 @@ namespace ImageRecognizer
                 }
             }
 
-            // Подготавливаем входные данные нейросети. Имя Input3 задано в файле модели
+            // Preparing neural net's inputs. 'Input3' name is used in the model itself
             var inputs = new List<NamedOnnxValue>
             {
                 NamedOnnxValue.CreateFromTensor("Input3", input)
             };
 
-            // Вычисляем предсказание нейросетью
+            // Inference
             using var session = new InferenceSession("mnist-8.onnx");
             Console.WriteLine("Predicting contents of image...");
             using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = session.Run(inputs);
 
-            // Получаем 1000 выходов и считаем для них softmax
+            // Applying softmax
+            // TODO: get into details and see if this is necessary for MNIST
             var output = results.First().AsEnumerable<float>().ToArray();
             var sum = output.Sum(x => (float)Math.Exp(x));
             var softmax = output.Select(x => (float)Math.Exp(x) / sum);
 
-            // Выдаем 10 наиболее вероятных результатов на экран
+            // Printing results
             foreach (var p in softmax
                 .Select((x, i) => new { Label = classLabels[i], Confidence = x })
                 .OrderByDescending(x => x.Confidence)
