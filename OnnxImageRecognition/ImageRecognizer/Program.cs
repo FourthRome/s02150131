@@ -21,11 +21,12 @@ namespace ImageRecognizer
                 image = Image.Load<Rgb24>(path);
             } catch(Exception e)
             {
-                Console.WriteLine($"Could not read image \"{path}\": \n{e.Message}");
+                // TODO: proper logging
+                System.Diagnostics.Debug.WriteLine($"[FILE ERROR] MnistRecognizer.Recognize: Could not read image \"{path}\": \n{e.Message}");
                 return;
             }
 
-
+            // These come from the model's requirements
             const int TargetWidth = 28;
             const int TargetHeight = 28;
 
