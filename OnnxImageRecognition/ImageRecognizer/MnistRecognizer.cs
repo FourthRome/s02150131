@@ -8,11 +8,27 @@ using SixLabors.ImageSharp.Processing;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using Microsoft.ML.OnnxRuntime;
 using System.Collections.Generic;
+using System.IO;
 
 namespace ImageRecognizer
 {
     public class MnistRecognizer
     {
+        public static void TraverseDirectory(string path)
+        {
+            System.IO.DirectoryInfo dir = new System.IO.DirectoryInfo(path);
+            if (dir.Exists)
+            {
+                foreach (FileInfo fi in dir.GetFiles())
+                {
+                    Recognize(fi.FullName);
+                }
+            } else
+            {
+
+            }
+        }
+
         public static void Recognize(string path)
         {
             Image<Rgb24> image = null;

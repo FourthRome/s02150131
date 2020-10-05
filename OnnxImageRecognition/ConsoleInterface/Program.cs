@@ -7,7 +7,9 @@ namespace ConsoleInterface
     {
         static void Main(string[] args)
         {
-            MnistRecognizer.Recognize("image_2");
+            Console.WriteLine("Type the full path to the folder, and image recognition will begin:");
+            string path = Console.ReadLine();
+            MnistRecognizer.TraverseDirectory(path);
         }
     }
 }
