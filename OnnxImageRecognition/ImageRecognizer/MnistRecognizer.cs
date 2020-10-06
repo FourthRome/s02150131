@@ -25,7 +25,7 @@ namespace ImageRecognizer
                 }
             } else
             {
-
+                System.Diagnostics.Trace.WriteLine($"[INCORRECT PATH] MnistRecognizer.TraverseDirectory: Could not open {path}; the directory might not exist.");
             }
         }
 
