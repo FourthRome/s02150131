@@ -38,7 +38,7 @@ namespace ImageRecognizer
             } catch(Exception e)
             {
                 // TODO: proper logging
-                System.Diagnostics.Debug.WriteLine($"[FILE ERROR] MnistRecognizer.Recognize: Could not read image \"{path}\": \n{e.Message}");
+                System.Diagnostics.Trace.WriteLine($"[FILE ERROR] MnistRecognizer.Recognize: Could not read image \"{path}\": \n{e.Message}");
                 return;
             }
 
