@@ -9,11 +9,47 @@ using Microsoft.ML.OnnxRuntime.Tensors;
 using Microsoft.ML.OnnxRuntime;
 using System.Collections.Generic;
 using System.IO;
+using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
 
 namespace ImageRecognizer
 {
+    public struct RecognitionResult
+    {
+        public struct ResultEntry
+        {
+            public string Label { get; set; }
+            public double Confidence { get; set; }
+        
+            public ResultEntry(string label, double confidence)
+            {
+                Label = label;
+                Confidence = confidence;
+            }
+        }
+
+        public string ImagePath { get; set; }
+        public List<ResultEntry> ModelOutput { get; }
+
+        // TODO: make RecognitionResult data class
+        
+        public RecognitionResult(string path, List<ResultEntry> modelOutput) 
+        {
+            ImagePath = path;
+            ModelOutput = modelOutput;
+        }
+    }
+
+
     public class MnistRecognizer
     {
+        public static ConcurrentQueue<RecognitionResult> ResultsQueue;
+
+        static MnistRecognizer()
+        {
+            ResultsQueue = new ConcurrentQueue<RecognitionResult>();
+        }
+
         public static void TraverseDirectory(string path)
         {
             System.IO.DirectoryInfo dir = new System.IO.DirectoryInfo(path);
@@ -35,7 +71,7 @@ namespace ImageRecognizer
             try
             {
                 image = Image.Load<Rgb24>(path);
-            } catch(Exception e)
+            } catch (Exception e)
             {
                 // TODO: proper logging
                 System.Diagnostics.Trace.WriteLine($"[FILE ERROR] MnistRecognizer.Recognize: Could not read image \"{path}\": \n{e.Message}");
@@ -76,7 +112,7 @@ namespace ImageRecognizer
 
             // Inference
             using var session = new InferenceSession("mnist-8.onnx");
-            Console.WriteLine("Predicting contents of image...");
+            Console.WriteLine($"Predicting contents of {path}");
             using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = session.Run(inputs);
 
             // Applying softmax
@@ -85,26 +121,14 @@ namespace ImageRecognizer
             var sum = output.Sum(x => (float)Math.Exp(x));
             var softmax = output.Select(x => (float)Math.Exp(x) / sum);
 
-            // Printing results
-            foreach (var p in softmax
-                .Select((x, i) => new { Label = classLabels[i], Confidence = x })
+            var res = softmax
+                .Select((x, i) => new RecognitionResult.ResultEntry(label : i.ToString(), confidence : x))
                 .OrderByDescending(x => x.Confidence)
-                .Take(10))
-                Console.WriteLine($"{p.Label} with confidence {p.Confidence}");
-        }
+                .Take(10)
+                .ToList();
 
-        static readonly string[] classLabels = new[]
-        {
-            "0",
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-            "8",
-            "9",
-        };
+            ResultsQueue.Enqueue(new RecognitionResult(path, res));
+
+        }
     }
 }
