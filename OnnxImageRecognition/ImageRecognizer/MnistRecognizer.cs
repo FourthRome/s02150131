@@ -11,6 +11,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
+using System.Linq.Expressions;
 
 namespace ImageRecognizer
 {
@@ -50,19 +52,34 @@ namespace ImageRecognizer
             ResultsQueue = new ConcurrentQueue<RecognitionResult>();
         }
 
-        public static void TraverseDirectory(string path)
+        public static async Task TraverseDirectory(string path)
         {
-            System.IO.DirectoryInfo dir = new System.IO.DirectoryInfo(path);
-            if (dir.Exists)
+            System.IO.DirectoryInfo dir;
+            List<Task> routines = new List<Task>();
+            try
             {
-                foreach (FileInfo fi in dir.GetFiles())
+                dir = new System.IO.DirectoryInfo(path);
+                if (dir.Exists)
                 {
-                    Recognize(fi.FullName);
+                    foreach (FileInfo fi in dir.GetFiles())
+                    {
+                        routines.Add(Task.Factory.StartNew(() =>
+                        {
+                            Recognize(fi.FullName);
+                        }));
+                    }
                 }
-            } else
-            {
-                System.Diagnostics.Trace.WriteLine($"[INCORRECT PATH] MnistRecognizer.TraverseDirectory: Could not open {path}; the directory might not exist.");
+                else
+                {
+                    System.Diagnostics.Trace.WriteLine($"[INCORRECT PATH] MnistRecognizer.TraverseDirectory: Could not open \"{path}\"; the directory might not exist.");
+                }
             }
+            catch
+            {
+                System.Diagnostics.Trace.WriteLine($"[INCORRECT PATH] MnistRecognizer.TraverseDirectory: Could not get info about directory \"{path}\"; the directory might not exist.");
+            }
+            
+            await Task.WhenAll(routines);
         }
 
         public static void Recognize(string path)

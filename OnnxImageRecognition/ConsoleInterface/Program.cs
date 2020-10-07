@@ -1,15 +1,16 @@
 ﻿using System;
+using System.Threading.Tasks;
 using ImageRecognizer;
 
 namespace ConsoleInterface
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             Console.WriteLine("Type the full path to the folder, and image recognition will begin:");
             string path = Console.ReadLine();
-            MnistRecognizer.TraverseDirectory(path);
+            await MnistRecognizer.TraverseDirectory(path);
 
             foreach (var entry in MnistRecognizer.ResultsQueue)
             {
