@@ -1,18 +1,16 @@
-﻿// Пример на основе https://github.com/microsoft/onnxruntime/tree/master/csharp/sample/Microsoft.ML.OnnxRuntime.ResNet50v2Sample
-
-using System;
-using SixLabors.ImageSharp; // Из одноимённого пакета NuGet
-using SixLabors.ImageSharp.PixelFormats;
-using System.Linq;
-using SixLabors.ImageSharp.Processing;
-using Microsoft.ML.OnnxRuntime.Tensors;
-using Microsoft.ML.OnnxRuntime;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
+using System.Linq;
+using System.Collections.Generic;
 using System.Collections.Concurrent;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using System.Linq.Expressions;
+
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.PixelFormats;
+using Microsoft.ML.OnnxRuntime;
+using Microsoft.ML.OnnxRuntime.Tensors;
+
 
 namespace ImageRecognizer
 {
@@ -82,13 +80,14 @@ namespace ImageRecognizer
             await Task.WhenAll(routines);
         }
 
-        public static void Recognize(string path)
+        public static void Recognize(string path, string modelPath="mnist-8.onnx")
         {
             Image<Rgb24> image = null;
             try
             {
                 image = Image.Load<Rgb24>(path);
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 // TODO: proper logging
                 System.Diagnostics.Trace.WriteLine($"[FILE ERROR] MnistRecognizer.Recognize: Could not read image \"{path}\": \n{e.Message}");
@@ -105,7 +104,7 @@ namespace ImageRecognizer
                 x.Resize(new ResizeOptions
                 {
                     Size = new Size(TargetWidth, TargetHeight),
-                    Mode = ResizeMode.Crop // Сохраняем пропорции обрезая лишнее
+                    Mode = ResizeMode.Crop
                 });
                 x.Grayscale();
             });
@@ -115,7 +114,7 @@ namespace ImageRecognizer
             for (int y = 0; y < TargetHeight; y++)
             {
                 Span<Rgb24> pixelSpan = image.GetPixelRowSpan(y);
-                for (int x = 0; x < TargetWidth; x++)
+                for (int x = 0; x < TargetWidth; ++x)
                 {
                     input[0, 0, y, x] = pixelSpan[x].R / 255f;
                 }
@@ -128,12 +127,20 @@ namespace ImageRecognizer
             };
 
             // Inference
-            using var session = new InferenceSession("mnist-8.onnx");
-            Console.WriteLine($"Predicting contents of {path}");
+            InferenceSession session;
+            try
+            {
+                session = new InferenceSession(modelPath);
+            }
+            catch
+            {
+                System.Diagnostics.Trace.WriteLine($"[FILE ERROR] MnistRecognizer.Recognize: Could not find \"{modelPath}\". Please follow the README.md and retry.");
+                return;
+            }
+
             using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = session.Run(inputs);
 
             // Applying softmax
-            // TODO: get into details and see if this is necessary for MNIST
             var output = results.First().AsEnumerable<float>().ToArray();
             var sum = output.Sum(x => (float)Math.Exp(x));
             var softmax = output.Select(x => (float)Math.Exp(x) / sum);
