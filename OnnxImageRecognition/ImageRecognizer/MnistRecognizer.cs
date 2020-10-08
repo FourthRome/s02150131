@@ -160,8 +160,6 @@ namespace ImageRecognizer
             ResultsQueue.Enqueue(new RecognitionResult(path, res));
             try { NewResults.Release(); } catch { }
             WritePermission.Release();
-
-            Console.WriteLine("Recognition finished");
         }
     }
 }

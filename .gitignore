@@ -138,6 +138,5 @@ _NCrunch*
 # ==========================
 # Additional custom settings
 # ==========================
-*.jpg
 .vs
 *.onnx
