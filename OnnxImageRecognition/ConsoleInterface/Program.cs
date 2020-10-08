@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using ImageRecognizer;
 
@@ -10,17 +12,31 @@ namespace ConsoleInterface
         {
             Console.WriteLine("Type the full path to the folder, and image recognition will begin:");
             string path = Console.ReadLine();
-            await MnistRecognizer.TraverseDirectory(path);
+            var traversing = MnistRecognizer.TraverseDirectory(path);
 
-            foreach (var entry in MnistRecognizer.ResultsQueue)
+            
+            while (!recognitionFinishedMarkers.Contains(traversing.Status))
             {
-                Console.WriteLine($"Results for {entry.ImagePath}:");
-                
-                foreach (var output in entry.ModelOutput)
+                await MnistRecognizer.NewResults.WaitAsync();
+
+                foreach (var entry in MnistRecognizer.ResultsQueue)
                 {
-                    Console.WriteLine($"{output.Label} with confidence {output.Confidence}");
+                    Console.WriteLine($"Results for {entry.ImagePath}:");
+
+                    foreach (var output in entry.ModelOutput)
+                    {
+                        Console.WriteLine($"{output.Label} with confidence {output.Confidence}");
+                    }
                 }
+
+                await Task.Delay(100);
             }
         }
+
+        static readonly TaskStatus[] recognitionFinishedMarkers = {
+            TaskStatus.Faulted,
+            TaskStatus.Canceled,
+            TaskStatus.RanToCompletion,
+        };
     }
 }

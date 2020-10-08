@@ -10,7 +10,7 @@ using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
-
+using System.Threading;
 
 namespace ImageRecognizer
 {
@@ -44,10 +44,15 @@ namespace ImageRecognizer
     public class MnistRecognizer
     {
         public static ConcurrentQueue<RecognitionResult> ResultsQueue;
+        public static SemaphoreSlim NewResults;
+        
+        private static SemaphoreSlim WritePermission;
 
         static MnistRecognizer()
         {
             ResultsQueue = new ConcurrentQueue<RecognitionResult>();
+            NewResults = new SemaphoreSlim(0, 1);
+            WritePermission = new SemaphoreSlim(1, 1);
         }
 
         public static async Task TraverseDirectory(string path)
@@ -151,8 +156,12 @@ namespace ImageRecognizer
                 .Take(10)
                 .ToList();
 
+            WritePermission.Wait();
             ResultsQueue.Enqueue(new RecognitionResult(path, res));
+            try { NewResults.Release(); } catch { }
+            WritePermission.Release();
 
+            Console.WriteLine("Recognition finished");
         }
     }
 }
