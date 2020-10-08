@@ -45,8 +45,7 @@ namespace ImageRecognizer
     {
         public static ConcurrentQueue<RecognitionResult> ResultsQueue;
         public static SemaphoreSlim NewResults;
-        
-        private static SemaphoreSlim WritePermission;
+        public static SemaphoreSlim WritePermission;
 
         static MnistRecognizer()
         {
