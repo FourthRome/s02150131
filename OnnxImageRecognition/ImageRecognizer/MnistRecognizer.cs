@@ -44,8 +44,8 @@ namespace ImageRecognizer
     public class MnistRecognizer
     {
         public static ConcurrentQueue<RecognitionResult> ResultsQueue;
-        public static SemaphoreSlim NewResults;
-        public static SemaphoreSlim WritePermission;
+        public static SemaphoreSlim NewResults;  // To notify about new entries
+        public static SemaphoreSlim WritePermission;  // To synchronize enqueue()
 
         static MnistRecognizer()
         {
@@ -54,21 +54,24 @@ namespace ImageRecognizer
             WritePermission = new SemaphoreSlim(1, 1);
         }
 
-        public static async Task TraverseDirectory(string path)
+        public static async Task TraverseDirectory(string path, CancellationToken cancelToken = default)
         {
             System.IO.DirectoryInfo dir;
             List<Task> routines = new List<Task>();
             try
             {
+                // TODO: traverse directory in batches
                 dir = new System.IO.DirectoryInfo(path);
                 if (dir.Exists)
                 {
                     foreach (FileInfo fi in dir.GetFiles())
                     {
+                        // Cancel adding new tasks, but all tasks that are started should be completed
+                        cancelToken.ThrowIfCancellationRequested();
                         routines.Add(Task.Factory.StartNew(() =>
                         {
                             Recognize(fi.FullName);
-                        }));
+                        }, cancelToken));
                     }
                 }
                 else
@@ -84,6 +87,8 @@ namespace ImageRecognizer
             await Task.WhenAll(routines);
         }
 
+
+        // TODO: model path should be a parameter thorugh the whole class lib
         public static void Recognize(string path, string modelPath="mnist-8.onnx")
         {
             Image<Rgb24> image = null;
@@ -93,7 +98,6 @@ namespace ImageRecognizer
             }
             catch (Exception e)
             {
-                // TODO: proper logging
                 System.Diagnostics.Trace.WriteLine($"[FILE ERROR] MnistRecognizer.Recognize: Could not read image \"{path}\": \n{e.Message}");
                 return;
             }
@@ -117,6 +121,7 @@ namespace ImageRecognizer
             var input = new DenseTensor<float>(new[] { 1, 1, TargetHeight, TargetWidth });
             for (int y = 0; y < TargetHeight; y++)
             {
+                // TODO: rewrite normalization properly
                 Span<Rgb24> pixelSpan = image.GetPixelRowSpan(y);
                 for (int x = 0; x < TargetWidth; ++x)
                 {
@@ -136,12 +141,13 @@ namespace ImageRecognizer
             {
                 session = new InferenceSession(modelPath);
             }
-            catch
+            catch  // TODO: make sure only this class of exceptions is caught here, and manage the others
             {
                 System.Diagnostics.Trace.WriteLine($"[FILE ERROR] MnistRecognizer.Recognize: Could not find \"{modelPath}\". Please follow the README.md and retry.");
                 return;
             }
 
+            // Getting results
             using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = session.Run(inputs);
 
             // Applying softmax
@@ -155,9 +161,10 @@ namespace ImageRecognizer
                 .Take(10)
                 .ToList();
 
+            // Put the new result into the queue
             WritePermission.Wait();
             ResultsQueue.Enqueue(new RecognitionResult(path, res));
-            try { NewResults.Release(); } catch { }
+            try { NewResults.Release(); } catch { }  // TODO: find a better solution for mutiple-releases-should-count-as-one problem
             WritePermission.Release();
         }
     }
