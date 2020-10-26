@@ -8,6 +8,9 @@ namespace ConsoleInterface
 {
     class Program
     {
+        //---------------
+        // Static members
+        //---------------
         static readonly TaskStatus[] recognitionFinishedMarkers = {
             TaskStatus.Faulted,
             TaskStatus.Canceled,
