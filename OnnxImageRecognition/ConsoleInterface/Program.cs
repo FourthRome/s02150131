@@ -9,13 +9,8 @@ namespace ConsoleInterface
     class Program
     {
         //---------------
-        // Static members
+        // Static methods
         //---------------
-        static readonly TaskStatus[] recognitionFinishedMarkers = {
-            TaskStatus.Faulted,
-            TaskStatus.Canceled,
-            TaskStatus.RanToCompletion,
-        };
         static async Task Main(string[] args)
         {
             Console.WriteLine("Type the full path to the folder, and image recognition will begin:");
@@ -32,7 +27,7 @@ namespace ConsoleInterface
             var traversing = MnistRecognizer.TraverseDirectory(path, cancelToken);
 
             // Print new items in results' queue
-            while (!recognitionFinishedMarkers.Contains(traversing.Status))
+            while (!traversing.IsCompleted)
             {
                 await MnistRecognizer.NewResults.WaitAsync();
                 await MnistRecognizer.WritePermission.WaitAsync();
