@@ -44,11 +44,11 @@ namespace ImageRecognizer
 
     public class MnistRecognizer
     {
-        public static ConcurrentQueue<RecognitionResult> ResultsQueue;
-        public static SemaphoreSlim NewResults;  // To notify about new entries
-        public static SemaphoreSlim WritePermission;  // To synchronize enqueue()
+        static ConcurrentQueue<RecognitionResult> ResultsQueue;
+        static SemaphoreSlim NewResults;  // To notify about new entries
+        static SemaphoreSlim WritePermission;  // To synchronize enqueue()
         public static CancellationTokenSource CancelTokenSource;  // To stop processing new images
-        public static CancellationToken CancelToken;
+        static CancellationToken CancelToken;
 
         static MnistRecognizer()
         {
@@ -76,7 +76,7 @@ namespace ImageRecognizer
             await resultsProcessing;
         }
 
-        public static async Task ProcessRecognitionResults(Action<RecognitionResult> callback, CancellationToken cancelToken)
+        static async Task ProcessRecognitionResults(Action<RecognitionResult> callback, CancellationToken cancelToken)
         {
             while (!cancelToken.IsCancellationRequested)
             {
@@ -111,7 +111,7 @@ namespace ImageRecognizer
         }
 
 
-        public static async Task TraverseDirectory(string path)
+        static async Task TraverseDirectory(string path)
         {
             System.IO.DirectoryInfo dir;
             List<Task> routines = new List<Task>();
@@ -153,7 +153,7 @@ namespace ImageRecognizer
 
 
         // TODO: model path should be a parameter thorugh the whole class lib
-        public static void Recognize(string path, string modelPath="mnist-8.onnx")
+        static void Recognize(string path, string modelPath="mnist-8.onnx")
         {
             Image<Rgb24> image = null;
             try
