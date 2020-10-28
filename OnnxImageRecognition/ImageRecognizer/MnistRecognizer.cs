@@ -11,6 +11,7 @@ using SixLabors.ImageSharp.PixelFormats;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using System.Threading;
+using System.Diagnostics;
 
 namespace ImageRecognizer
 {
@@ -46,15 +47,71 @@ namespace ImageRecognizer
         public static ConcurrentQueue<RecognitionResult> ResultsQueue;
         public static SemaphoreSlim NewResults;  // To notify about new entries
         public static SemaphoreSlim WritePermission;  // To synchronize enqueue()
+        public static CancellationTokenSource CancelTokenSource;  // To stop processing new images
+        public static CancellationToken CancelToken;
 
         static MnistRecognizer()
         {
             ResultsQueue = new ConcurrentQueue<RecognitionResult>();
             NewResults = new SemaphoreSlim(0, 1);
             WritePermission = new SemaphoreSlim(1, 1);
+            CancelTokenSource = new CancellationTokenSource();
+            CancelToken = CancelTokenSource.Token;
         }
 
-        public static async Task TraverseDirectory(string path, CancellationToken cancelToken = default)
+        public static async Task ProcessImagesInDirectory(string path, Action<RecognitionResult> callback)
+        {
+            var processingCts = new CancellationTokenSource();  // Separate cancellation token for the result-processing task's cancellation
+            var resultsProcessing = Task.Run(async () => { await ProcessRecognitionResults(callback, processingCts.Token); });  // TODO: remove a layer of abstraction here
+            try
+            {
+                await TraverseDirectory(path);
+            }
+            catch (OperationCanceledException)
+            {
+                Trace.WriteLine($"[INFO] MnistRecognizer.ProcessImagesInDirectory: Catching TraverseDirectory OperationCanceledException");
+            }
+            
+            processingCts.Cancel();
+            await resultsProcessing;
+        }
+
+        public static async Task ProcessRecognitionResults(Action<RecognitionResult> callback, CancellationToken cancelToken)
+        {
+            while (!cancelToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await NewResults.WaitAsync(cancelToken);
+                } catch (OperationCanceledException)
+                {
+                    Trace.WriteLine($"[INFO] MnistRecognizer.ProcessRecognitionResults: Interrupting NewResults.WaitAsync due to cancellation request");
+                }
+                await WritePermission.WaitAsync();
+                foreach (var entry in ResultsQueue)
+                {
+                    try
+                    {
+                        callback(entry);
+                    }
+                    catch (Exception e)
+                    {
+                        Trace.WriteLine($"[CALLBACK EXCEPTION] MnistRecognizer.ProcessRecognitionResults: Exception thrown during result processing. Exception message: {e.Message}");
+                    }
+                }
+                ResultsQueue.Clear();
+                WritePermission.Release();
+                await Task.Delay(100);
+            }
+
+            foreach (var entry in ResultsQueue)
+            {
+                callback(entry);
+            }
+        }
+
+
+        public static async Task TraverseDirectory(string path)
         {
             System.IO.DirectoryInfo dir;
             List<Task> routines = new List<Task>();
@@ -67,21 +124,28 @@ namespace ImageRecognizer
                     foreach (FileInfo fi in dir.GetFiles())
                     {
                         // Cancel adding new tasks, but all tasks that are started should be completed
-                        cancelToken.ThrowIfCancellationRequested();
+                        CancelToken.ThrowIfCancellationRequested();
                         routines.Add(Task.Factory.StartNew(() =>
                         {
+                            // TODO: Ask about capture here
+                            Trace.WriteLine($"[INFO] Starting recognizing {fi} in a separate task");
                             Recognize(fi.FullName);
-                        }, cancelToken));
+                        }, CancelToken));
+                        Trace.WriteLine($"[INFO] MnistRecognizer.TraverseDirectory: put {fi} to processing");
                     }
                 }
                 else
                 {
-                    System.Diagnostics.Trace.WriteLine($"[INCORRECT PATH] MnistRecognizer.TraverseDirectory: Could not open \"{path}\"; the directory might not exist.");
+                    Trace.WriteLine($"[INCORRECT PATH] MnistRecognizer.TraverseDirectory: Could not open \"{path}\"; the directory might not exist.");
                 }
             }
-            catch
+            catch (TaskCanceledException) // TODO: Ask why this is leaking TaskCanceledException from the children tasks!
             {
-                System.Diagnostics.Trace.WriteLine($"[INCORRECT PATH] MnistRecognizer.TraverseDirectory: Could not get info about directory \"{path}\"; the directory might not exist.");
+                Trace.WriteLine($"[INFO] MnistRecognizer.TraverseDirectory: Cancellation from external source");
+            }
+            catch  // TODO: Is this catching cancellation exception too?
+            {
+                Trace.WriteLine($"[INCORRECT PATH] MnistRecognizer.TraverseDirectory: Could not get info about directory \"{path}\"; the directory might not exist.");
             }
             
             await Task.WhenAll(routines);
@@ -98,7 +162,7 @@ namespace ImageRecognizer
             }
             catch (Exception e)
             {
-                System.Diagnostics.Trace.WriteLine($"[FILE ERROR] MnistRecognizer.Recognize: Could not read image \"{path}\": \n{e.Message}");
+                Trace.WriteLine($"[FILE ERROR] MnistRecognizer.Recognize: Could not read image \"{path}\": \n{e.Message}");
                 return;
             }
 
@@ -143,7 +207,7 @@ namespace ImageRecognizer
             }
             catch  // TODO: make sure only this class of exceptions is caught here, and manage the others
             {
-                System.Diagnostics.Trace.WriteLine($"[FILE ERROR] MnistRecognizer.Recognize: Could not find \"{modelPath}\". Please follow the README.md and retry.");
+                Trace.WriteLine($"[FILE ERROR] MnistRecognizer.Recognize: Could not find \"{modelPath}\". Please follow the README.md and retry.");
                 return;
             }
 

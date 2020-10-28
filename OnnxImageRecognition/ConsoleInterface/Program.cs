@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ImageRecognizer;
@@ -16,40 +15,20 @@ namespace ConsoleInterface
             Console.WriteLine("Type the full path to the folder, and image recognition will begin:");
             string path = Console.ReadLine();
 
-            // Create cancellation items
-            CancellationTokenSource cts = new CancellationTokenSource();
-            CancellationToken cancelToken = cts.Token;
-
             // Run task to wait for cancellation from keyboard
-            var cancellationTask = Task.Run(() => { CancellationWaiter(cts); }, cancelToken);
+            var cancellationTask = Task.Run(() => { CancellationWaiter(MnistRecognizer.CancelTokenSource); });
 
             // Start processing
-            var traversing = MnistRecognizer.TraverseDirectory(path, cancelToken);
-
-            // Print new items in results' queue
-            while (!traversing.IsCompleted)
-            {
-                await MnistRecognizer.NewResults.WaitAsync();
-                await MnistRecognizer.WritePermission.WaitAsync();
-                PrintQueue();
-                MnistRecognizer.ResultsQueue.Clear();
-                MnistRecognizer.WritePermission.Release();
-                await Task.Delay(100);
-            }
-
-            PrintQueue();
+            await MnistRecognizer.ProcessImagesInDirectory(path, PrintResultEntry);
         }
 
-        static void PrintQueue()
+        static void PrintResultEntry(RecognitionResult entry)
         {
-            foreach (var entry in MnistRecognizer.ResultsQueue)
-            {
-                Console.WriteLine($"Results for {entry.ImagePath}:");
+            Console.WriteLine($"Results for {entry.ImagePath}:");
 
-                foreach (var output in entry.ModelOutput)
-                {
-                    Console.WriteLine($"{output.Label} with confidence {output.Confidence}");
-                }
+            foreach (var output in entry.ModelOutput)
+            {
+                Console.WriteLine($"{output.Label} with confidence {output.Confidence}");
             }
         }
 
