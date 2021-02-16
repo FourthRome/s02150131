@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GraphicalInterface"
+        xmlns:recognition="clr-namespace:ImageRecognizer;assembly=ImageRecognizer"
         mc:Ignorable="d"
         Title="MainWindow" Height="600" Width="800">
     <Grid Name="mainGrid">
@@ -19,20 +20,32 @@
         <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Vertical" Name="controlsPanel">
 
             <StackPanel Orientation="Horizontal">
-                <Button Content="Open"/>
+                <TextBlock>Path to directory:</TextBlock>
+                <TextBox Name="directoryPathTextBox"/>
+                <Button Content="Open" Click="OnClickChooseFolder"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal">
-                <Button Content="Start"/>
-                <Button Content="Abort"/>
+                <Button Content="Start" Click="OnClickStart"/>
+                <Button Content="Abort" Click="OnClickAbort"/>
             </StackPanel>
             
         </StackPanel>
 
         <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical" Name="classesPanel">
-            
+            <TextBlock>Classes:</TextBlock>
+            <TextBlock>0</TextBlock>
+            <TextBlock>1</TextBlock>
+            <TextBlock>2</TextBlock>
+            <TextBlock>3</TextBlock>
+            <TextBlock>4</TextBlock>
+            <TextBlock>5</TextBlock>
+            <TextBlock>6</TextBlock>
+            <TextBlock>7</TextBlock>
+            <TextBlock>8</TextBlock>
+            <TextBlock>9</TextBlock>
         </StackPanel>
 
-        <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Vertical" Grid.ColumnSpan="2">
+        <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Vertical" Grid.ColumnSpan="2" Name="imagesPanel">
             
         </StackPanel>
         

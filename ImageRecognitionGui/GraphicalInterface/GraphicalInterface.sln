@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.30626.31
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GraphicalInterface", "GraphicalInterface.csproj", "{6BE18F1B-E7C4-4B80-80CB-0B67B3793573}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImageRecognizer", "..\..\OnnxImageRecognition\ImageRecognizer\ImageRecognizer.csproj", "{ACF4854B-8978-4980-83EE-0A8F201127CE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{6BE18F1B-E7C4-4B80-80CB-0B67B3793573}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6BE18F1B-E7C4-4B80-80CB-0B67B3793573}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6BE18F1B-E7C4-4B80-80CB-0B67B3793573}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ACF4854B-8978-4980-83EE-0A8F201127CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACF4854B-8978-4980-83EE-0A8F201127CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACF4854B-8978-4980-83EE-0A8F201127CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACF4854B-8978-4980-83EE-0A8F201127CE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
