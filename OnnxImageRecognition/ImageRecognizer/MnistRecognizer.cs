@@ -47,7 +47,7 @@ namespace ImageRecognizer
         static ConcurrentQueue<RecognitionResult> ResultsQueue;
         static SemaphoreSlim NewResults;  // To notify about new entries
         static SemaphoreSlim WritePermission;  // To synchronize enqueue()
-        public static CancellationTokenSource CancelTokenSource;  // To stop processing new images
+        public static CancellationTokenSource CancelTokenSource { get; private set; }  // To stop processing new images
         static CancellationToken CancelToken;
 
         static MnistRecognizer()

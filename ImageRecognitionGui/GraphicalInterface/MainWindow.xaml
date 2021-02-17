@@ -7,47 +7,100 @@
         xmlns:recognition="clr-namespace:ImageRecognizer;assembly=ImageRecognizer"
         mc:Ignorable="d"
         Title="MainWindow" Height="600" Width="800">
+
+    <!--MainWindow properties-->
+    <Window.Resources>
+        <!--Backing data objects-->
+        
+        <!--Backing data objects-->
+        
+        <!--Menus-->
+        
+        <!--Menus-->
+
+        <!--Styles-->
+        <Style x:Key="key_LabelTextBlock" TargetType="{x:Type TextBlock}">
+            <Setter Property="Margin" Value="0,0,10,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextAlignment" Value="Right"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <Style x:Key="key_data_FrameworkElement" TargetType="{x:Type FrameworkElement}">
+            <Setter Property="Margin" Value="10,0,10,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+
+        <Style x:Key="key_data_TextBlock" BasedOn="{StaticResource key_data_FrameworkElement}" TargetType="{x:Type TextBlock}">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <Style x:Key="key_data_TextBox" BasedOn="{StaticResource key_data_FrameworkElement}" TargetType="{x:Type TextBox}">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <Style x:Key="key_stretch" TargetType="{x:Type FrameworkElement}">
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+
+        <Style x:Key="key_top_left" TargetType="{x:Type FrameworkElement}">
+            <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
+        <!--Styles-->
+    </Window.Resources>
+    
+    
+    
     <Grid Name="mainGrid">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="300"/>
             <ColumnDefinition Width="1*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="300"/>
+            <RowDefinition Height="100"/>
             <RowDefinition Height="1*"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Vertical" Name="controlsPanel">
+        
+        <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Vertical" Name="directoryPanel">
 
             <StackPanel Orientation="Horizontal">
-                <TextBlock>Path to directory:</TextBlock>
-                <TextBox Name="directoryPathTextBox"/>
+                <TextBlock Style="{StaticResource key_LabelTextBlock}">Path to directory:</TextBlock>
+                <TextBox Name="directoryPathTextBox" Width="100"/>
                 <Button Content="Open" Click="OnClickChooseFolder"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal">
                 <Button Content="Start" Click="OnClickStart"/>
-                <Button Content="Abort" Click="OnClickAbort"/>
+                <Button Content="Stop" Click="OnClickStop"/>
             </StackPanel>
             
         </StackPanel>
 
-        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical" Name="classesPanel">
-            <TextBlock>Classes:</TextBlock>
-            <TextBlock>0</TextBlock>
-            <TextBlock>1</TextBlock>
-            <TextBlock>2</TextBlock>
-            <TextBlock>3</TextBlock>
-            <TextBlock>4</TextBlock>
-            <TextBlock>5</TextBlock>
-            <TextBlock>6</TextBlock>
-            <TextBlock>7</TextBlock>
-            <TextBlock>8</TextBlock>
-            <TextBlock>9</TextBlock>
+        <StackPanel Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" Orientation="Vertical" Name="images" Style="{StaticResource key_stretch}">
+            <StackPanel Orientation="Vertical">
+                <StackPanel Orientation="Horizontal" Name="imagesScrollViewerControls">
+                    <TextBlock Style="{StaticResource key_LabelTextBlock}">Images for class:</TextBlock>
+                    <ComboBox Name="imageClassComboBox" Width="100"/>
+                </StackPanel>
+                <ScrollViewer Name="imagesScrollViewer" Style="{StaticResource key_stretch}"></ScrollViewer>
+                
+            </StackPanel>
+
         </StackPanel>
 
-        <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Vertical" Grid.ColumnSpan="2" Name="imagesPanel">
-            
+
+        <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Vertical" Name="infoPanel" Style="{StaticResource key_stretch}">
+            <TextBlock>Results of recognition in the folder:</TextBlock>
+            <ListBox Name ="classesInfo"></ListBox>
+
+            <StackPanel Orientation="Horizontal" Name="recognizerControls">
+                <Button>Start</Button>
+                <Button>Stop</Button>
+            </StackPanel>
         </StackPanel>
-        
+
     </Grid>
 </Window>

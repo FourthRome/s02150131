@@ -24,6 +24,7 @@ namespace GraphicalInterface
     public partial class MainWindow : Window
     {
         public Task recognitionTask;
+        public 
 
         public MainWindow()
         {
@@ -46,7 +47,7 @@ namespace GraphicalInterface
         {
             FolderBrowserDialog dlg = new FolderBrowserDialog();
 
-            if (dlg.ShowDialog() == DialogResult.OK)
+            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                   
             }
