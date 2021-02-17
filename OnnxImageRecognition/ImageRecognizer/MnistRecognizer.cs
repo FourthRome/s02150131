@@ -15,12 +15,14 @@ using System.Diagnostics;
 
 namespace ImageRecognizer
 {
+    // The struct to represent a single recognition result
     public struct RecognitionResult
     {
+        // Model gives answers with confidence, so for each of the probabilities there is a separate entry
         public struct ResultEntry
         {
-            public string Label { get; set; }
-            public double Confidence { get; set; }
+            public string Label { get; }
+            public double Confidence { get; }
         
             public ResultEntry(string label, double confidence)
             {
@@ -29,8 +31,9 @@ namespace ImageRecognizer
             }
         }
 
-        public string ImagePath { get; set; }
+        public string ImagePath { get; }
         public List<ResultEntry> ModelOutput { get; }
+        public ResultEntry BestMatch { get; }
 
         // TODO: make RecognitionResult data class
         
@@ -38,18 +41,31 @@ namespace ImageRecognizer
         {
             ImagePath = path;
             ModelOutput = modelOutput;
+            BestMatch = ModelOutput[0];  // It is guaranteed to be the first element now; however, there should be a better check
         }
     }
 
 
     public class MnistRecognizer
     {
+        //---------------
+        // Private fields
+        //---------------
         static ConcurrentQueue<RecognitionResult> ResultsQueue;
         static SemaphoreSlim NewResults;  // To notify about new entries
         static SemaphoreSlim WritePermission;  // To synchronize enqueue()
-        public static CancellationTokenSource CancelTokenSource { get; private set; }  // To stop processing new images
         static CancellationToken CancelToken;
 
+        //------------------
+        // Public properties
+        //------------------
+        
+        // It is public in order to reuse the token in external applications; probably a bad idea
+        public static CancellationTokenSource CancelTokenSource { get; private set; }  // To stop processing new images
+
+        //-------------
+        // Constructors
+        //-------------
         static MnistRecognizer()
         {
             ResultsQueue = new ConcurrentQueue<RecognitionResult>();
@@ -59,6 +75,11 @@ namespace ImageRecognizer
             CancelToken = CancelTokenSource.Token;
         }
 
+        //----------------------
+        // Public static methods
+        //----------------------
+
+        // Main interface of the library
         public static async Task ProcessImagesInDirectory(string path, Action<RecognitionResult> callback)
         {
             var processingCts = new CancellationTokenSource();  // Separate cancellation token for the result-processing task's cancellation
@@ -76,6 +97,11 @@ namespace ImageRecognizer
             await resultsProcessing;
         }
 
+        //-----------------------
+        // Private static methods
+        //-----------------------
+
+        // Method to run the callbacks if there are new results
         static async Task ProcessRecognitionResults(Action<RecognitionResult> callback, CancellationToken cancelToken)
         {
             while (!cancelToken.IsCancellationRequested)
@@ -110,7 +136,7 @@ namespace ImageRecognizer
             }
         }
 
-
+        // Method to start all the tasks
         static async Task TraverseDirectory(string path)
         {
             System.IO.DirectoryInfo dir;
@@ -152,8 +178,9 @@ namespace ImageRecognizer
         }
 
 
-        // TODO: model path should be a parameter thorugh the whole class lib
-        static void Recognize(string path, string modelPath="mnist-8.onnx")
+
+        // Method to recognize a single image
+        static void Recognize(string path, string modelPath="mnist-8.onnx")  // TODO: model path should be a parameter through the whole class lib
         {
             Image<Rgb24> image = null;
             try

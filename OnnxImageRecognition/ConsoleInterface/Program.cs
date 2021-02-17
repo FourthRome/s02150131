@@ -22,6 +22,7 @@ namespace ConsoleInterface
             await MnistRecognizer.ProcessImagesInDirectory(path, PrintResultEntry);
         }
 
+        // A callback for every new result
         static void PrintResultEntry(RecognitionResult entry)
         {
             Console.WriteLine($"Results for {entry.ImagePath}:");
@@ -32,7 +33,8 @@ namespace ConsoleInterface
             }
         }
 
-        static void CancellationWaiter(CancellationTokenSource cts)
+        // Wait for a key combination to stop spawning new tasks
+        static void CancellationWaiter(CancellationTokenSource cts)  // TODO: how do we renew the cts?
         {
             while (!cts.Token.IsCancellationRequested)
             {
