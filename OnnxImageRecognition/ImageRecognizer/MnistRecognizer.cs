@@ -35,12 +35,14 @@ namespace ImageRecognizer
         public List<ResultEntry> ModelOutput { get; }
         public ResultEntry BestMatch { get; }
 
+
         // TODO: make RecognitionResult data class
         
         public RecognitionResult(string path, List<ResultEntry> modelOutput) 
         {
             ImagePath = path;
             ModelOutput = modelOutput;
+
             BestMatch = ModelOutput[0];  // It is guaranteed to be the first element now; however, there should be a better check
         }
     }
@@ -169,6 +171,7 @@ namespace ImageRecognizer
                 dir = new System.IO.DirectoryInfo(path);
                 if (dir.Exists)
                 {
+
                     foreach (FileInfo finfo in dir.GetFiles())
                     {
                         // Cancel adding new tasks, but all tasks that are started will still be completed
@@ -185,6 +188,7 @@ namespace ImageRecognizer
                             Recognize(fi.FullName);
                         }, finfo, cancelToken));
                         Trace.WriteLine($"[INFO] MnistRecognizer.TraverseDirectory: put {finfo} to processing");
+
                     }
                 }
                 else
@@ -199,6 +203,7 @@ namespace ImageRecognizer
             catch  // TODO: Is this catching cancellation exception too?
             {
                 Trace.WriteLine($"[INCORRECT PATH] MnistRecognizer.TraverseDirectory: Could not get info about directory \"{path}\"; the directory might not exist.");
+
             }
             
             await Task.WhenAll(routines);
