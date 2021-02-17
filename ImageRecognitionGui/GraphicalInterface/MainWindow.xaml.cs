@@ -24,7 +24,12 @@ namespace GraphicalInterface
 
         public void OnClickStart(object sender, RoutedEventArgs e)
         {
-            viewModel.RecognitionTask = Task.Run(async () => { await MnistRecognizer.ProcessImagesInDirectory(directoryPathTextBox.Text, RecognitionCallback); });
+            Trace.WriteLine("Before starting recognition");
+            string par = directoryPathTextBox.Text;
+            viewModel.RecognitionTask = Task.Run(async () => {
+                await MnistRecognizer.ProcessImagesInDirectory(par, RecognitionCallback); 
+            });
+            Trace.WriteLine("Recognition must have started");
         }
 
         public void OnClickStop(object sender, RoutedEventArgs e)
