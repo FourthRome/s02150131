@@ -24,8 +24,10 @@ namespace GraphicalInterface
     public partial class MainWindow : Window
     {
         public Task recognitionTask;
-        public 
 
+        //---------------------------------------------
+        // Constructors + window's basic event handlers
+        //---------------------------------------------
         public MainWindow()
         {
             InitializeComponent();
@@ -34,13 +36,17 @@ namespace GraphicalInterface
 
         public void OnClickStart(object sender, RoutedEventArgs e)
         {
-            MnistRecognizer.CancelTokenSource = new CancellationTokenSource();
-            //recognitionTask = Task.Run(async () => { await MnistRecognizer.ProcessImagesInDirectory(); });
+            recognitionTask = Task.Run(async () => { await MnistRecognizer.ProcessImagesInDirectory(directoryPathTextBox.Text, RecognitionCallback); });
+        }
+
+        public void OnNewResult(RecognitionResult result)
+        {
+            
         }
 
         public void OnClickAbort(object sender, RoutedEventArgs e)
         {
-            MnistRecognizer.CancelTokenSource.Cancel();
+            MnistRecognizer.StopProcessing();
         }
 
         public void OnClickChooseFolder(object sender, RoutedEventArgs e)
@@ -53,7 +59,7 @@ namespace GraphicalInterface
             }
         }
 
-        public void RecognitionCallback()
+        public void RecognitionCallback(RecognitionResult result)
         {
 
         }
