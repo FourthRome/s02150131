@@ -16,7 +16,7 @@ namespace ConsoleInterface
             string path = Console.ReadLine();
 
             // Run task to wait for cancellation from keyboard
-            var cancellationTask = Task.Run(() => { CancellationWaiter(MnistRecognizer.CancelTokenSource); });
+            var cancellationTask = Task.Run(async () => { await CancellationWaiter(); });  // Isn't there too many layers of abstraction?
 
             // Start processing
             await MnistRecognizer.ProcessImagesInDirectory(path, PrintResultEntry);
@@ -34,13 +34,18 @@ namespace ConsoleInterface
         }
 
         // Wait for a key combination to stop spawning new tasks
-        static void CancellationWaiter(CancellationTokenSource cts)  // TODO: how do we renew the cts?
+        static async Task CancellationWaiter(CancellationTokenSource cts = null)
         {
+            if (cts == null)  // If cts is not provided externally, the waiter will kill itself
+            {
+                cts = new CancellationTokenSource();
+            }
+
             while (!cts.Token.IsCancellationRequested)
             {
                 if (!Console.KeyAvailable)
                 {
-                    Task.Delay(100);
+                    await Task.Delay(100);
                 }
                 else
                 {
@@ -49,6 +54,7 @@ namespace ConsoleInterface
                     {
                         cts.Cancel();
                         Console.WriteLine("Termination is requested...");
+                        MnistRecognizer.StopProcessing();
                         return;
                     }
                 }

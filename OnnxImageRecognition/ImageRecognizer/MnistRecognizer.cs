@@ -51,28 +51,19 @@ namespace ImageRecognizer
         //---------------
         // Private fields
         //---------------
-        static ConcurrentQueue<RecognitionResult> ResultsQueue;
-        static SemaphoreSlim NewResults;  // To notify about new entries
-        static SemaphoreSlim WritePermission;  // To synchronize enqueue()
-        static CancellationToken CancelToken;
-
-        //------------------
-        // Public properties
-        //------------------
-        
-        // It is public in order to reuse the token in external applications; probably a bad idea
-        public static CancellationTokenSource CancelTokenSource { get; private set; }  // To stop processing new images
+        static ConcurrentQueue<RecognitionResult> resultsQueue;
+        static SemaphoreSlim newResults;  // To notify about new entries
+        static SemaphoreSlim writePermission;  // To synchronize enqueue()
+        static CancellationTokenSource cancelTokenSource;  // To stop processing new images
+        static CancellationToken cancelToken;
 
         //-------------
         // Constructors
         //-------------
         static MnistRecognizer()
         {
-            ResultsQueue = new ConcurrentQueue<RecognitionResult>();
-            NewResults = new SemaphoreSlim(0, 1);
-            WritePermission = new SemaphoreSlim(1, 1);
-            CancelTokenSource = new CancellationTokenSource();
-            CancelToken = CancelTokenSource.Token;
+            newResults = new SemaphoreSlim(0, 1);
+            writePermission = new SemaphoreSlim(1, 1);
         }
 
         //----------------------
@@ -82,8 +73,11 @@ namespace ImageRecognizer
         // Main interface of the library
         public static async Task ProcessImagesInDirectory(string path, Action<RecognitionResult> callback)
         {
-            var processingCts = new CancellationTokenSource();  // Separate cancellation token for the result-processing task's cancellation
-            var resultsProcessing = Task.Run(async () => { await ProcessRecognitionResults(callback, processingCts.Token); });  // TODO: remove a layer of abstraction here
+            resultsQueue = new ConcurrentQueue<RecognitionResult>();
+            cancelTokenSource = new CancellationTokenSource();
+            cancelToken = cancelTokenSource.Token;
+            //var processingCts = new CancellationTokenSource();  // Separate cancellation token for the result-processing task's cancellation
+            var resultsProcessing = Task.Run(async () => { await ProcessRecognitionResults(callback); });  // TODO: remove a layer of abstraction here
             try
             {
                 await TraverseDirectory(path);
@@ -93,8 +87,24 @@ namespace ImageRecognizer
                 Trace.WriteLine($"[INFO] MnistRecognizer.ProcessImagesInDirectory: Catching TraverseDirectory OperationCanceledException");
             }
             
-            processingCts.Cancel();
+            cancelTokenSource.Cancel();
             await resultsProcessing;
+        }
+
+        // In case we need no more processing
+        public static void StopProcessing()
+        {
+            if (cancelTokenSource != null)
+            {
+                try
+                {
+                    cancelTokenSource.Cancel();
+                }
+                catch (ObjectDisposedException)
+                {
+                    Trace.WriteLine($"[EXCEPTION] MnistRecognizer.Stop: Tried to stop recognition, but the CancellationTokenSource had already been disposed.");
+                }
+            }
         }
 
         //-----------------------
@@ -102,19 +112,19 @@ namespace ImageRecognizer
         //-----------------------
 
         // Method to run the callbacks if there are new results
-        static async Task ProcessRecognitionResults(Action<RecognitionResult> callback, CancellationToken cancelToken)
+        static async Task ProcessRecognitionResults(Action<RecognitionResult> callback)
         {
             while (!cancelToken.IsCancellationRequested)
             {
                 try
                 {
-                    await NewResults.WaitAsync(cancelToken);
+                    await newResults.WaitAsync(cancelToken);
                 } catch (OperationCanceledException)
                 {
                     Trace.WriteLine($"[INFO] MnistRecognizer.ProcessRecognitionResults: Interrupting NewResults.WaitAsync due to cancellation request");
                 }
-                await WritePermission.WaitAsync();
-                foreach (var entry in ResultsQueue)
+                await writePermission.WaitAsync();
+                foreach (var entry in resultsQueue)
                 {
                     try
                     {
@@ -125,14 +135,21 @@ namespace ImageRecognizer
                         Trace.WriteLine($"[CALLBACK EXCEPTION] MnistRecognizer.ProcessRecognitionResults: Exception thrown during result processing. Exception message: {e.Message}");
                     }
                 }
-                ResultsQueue.Clear();
-                WritePermission.Release();
+                resultsQueue.Clear();
+                writePermission.Release();
                 await Task.Delay(100);
             }
 
-            foreach (var entry in ResultsQueue)
+            foreach (var entry in resultsQueue)
             {
-                callback(entry);
+                try
+                {
+                    callback(entry);
+                }
+                catch (Exception e)
+                {
+                    Trace.WriteLine($"[CALLBACK EXCEPTION] MnistRecognizer.ProcessRecognitionResults: Exception thrown during result processing. Exception message: {e.Message}");
+                }
             }
         }
 
@@ -147,17 +164,22 @@ namespace ImageRecognizer
                 dir = new System.IO.DirectoryInfo(path);
                 if (dir.Exists)
                 {
-                    foreach (FileInfo fi in dir.GetFiles())
+                    foreach (FileInfo finfo in dir.GetFiles())
                     {
-                        // Cancel adding new tasks, but all tasks that are started should be completed
-                        CancelToken.ThrowIfCancellationRequested();
-                        routines.Add(Task.Factory.StartNew(() =>
+                        // Cancel adding new tasks, but all tasks that are started will still be completed
+                        if (cancelToken.IsCancellationRequested)
                         {
+                            break;
+                        }
+
+                        routines.Add(Task.Factory.StartNew(objFinfo =>
+                        {
+                            var fi = (FileInfo) objFinfo;
                             // TODO: Ask about capture here
                             Trace.WriteLine($"[INFO] Starting recognizing {fi} in a separate task");
                             Recognize(fi.FullName);
-                        }, CancelToken));
-                        Trace.WriteLine($"[INFO] MnistRecognizer.TraverseDirectory: put {fi} to processing");
+                        }, finfo, cancelToken));
+                        Trace.WriteLine($"[INFO] MnistRecognizer.TraverseDirectory: put {finfo} to processing");
                     }
                 }
                 else
@@ -253,10 +275,10 @@ namespace ImageRecognizer
                 .ToList();
 
             // Put the new result into the queue
-            WritePermission.Wait();
-            ResultsQueue.Enqueue(new RecognitionResult(path, res));
-            try { NewResults.Release(); } catch { }  // TODO: find a better solution for mutiple-releases-should-count-as-one problem
-            WritePermission.Release();
+            writePermission.Wait();
+            resultsQueue.Enqueue(new RecognitionResult(path, res));
+            try { newResults.Release(); } catch { }  // TODO: find a better solution for mutiple-releases-should-count-as-one problem
+            writePermission.Release();
         }
     }
 }
