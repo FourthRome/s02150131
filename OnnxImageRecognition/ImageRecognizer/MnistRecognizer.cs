@@ -66,6 +66,11 @@ namespace ImageRecognizer
             writePermission = new SemaphoreSlim(1, 1);
         }
 
+        //-------------------------
+        // Public static properties
+        //-------------------------
+        public static string[] ImageLabels { get => new string[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" }; }
+
         //----------------------
         // Public static methods
         //----------------------

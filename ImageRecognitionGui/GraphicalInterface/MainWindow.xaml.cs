@@ -24,6 +24,7 @@ namespace GraphicalInterface
     public partial class MainWindow : Window
     {
         public Task recognitionTask;
+        public string[] imageLabels; 
 
         //---------------------------------------------
         // Constructors + window's basic event handlers
@@ -32,16 +33,12 @@ namespace GraphicalInterface
         {
             InitializeComponent();
             recognitionTask = null;
+            imageLabels = MnistRecognizer.ImageLabels;
         }
 
         public void OnClickStart(object sender, RoutedEventArgs e)
         {
             recognitionTask = Task.Run(async () => { await MnistRecognizer.ProcessImagesInDirectory(directoryPathTextBox.Text, RecognitionCallback); });
-        }
-
-        public void OnNewResult(RecognitionResult result)
-        {
-            
         }
 
         public void OnClickAbort(object sender, RoutedEventArgs e)
