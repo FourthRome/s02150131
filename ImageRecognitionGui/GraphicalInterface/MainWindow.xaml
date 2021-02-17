@@ -72,11 +72,7 @@
                 <TextBox Name="directoryPathTextBox" Width="100"/>
                 <Button Content="Open" Click="OnClickChooseFolder"/>
             </StackPanel>
-            <StackPanel Orientation="Horizontal">
-                <Button Content="Start" Click="OnClickStart"/>
-                <Button Content="Stop" Click="OnClickStop"/>
-            </StackPanel>
-            
+
         </StackPanel>
 
         <Grid Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" Name="imagesGrid" Style="{StaticResource key_stretch}">
@@ -91,7 +87,7 @@
             </Grid.RowDefinitions>
 
             <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource key_LabelTextBlock}">Images for class:</TextBlock>
-            <ComboBox Grid.Row="0" Grid.Column="1" Name="imageClassComboBox" Style="{StaticResource key_data_FrameworkElement}"/>
+            <ComboBox Grid.Row="0" Grid.Column="1" Name="imageClassComboBox" Style="{StaticResource key_data_FrameworkElement}" ItemsSource="{Binding Path=ImageLabels}"/>
             <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Name="imagesScrollViewer" Style="{StaticResource key_stretch}"></ScrollViewer>
         </Grid>
 
