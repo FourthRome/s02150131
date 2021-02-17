@@ -44,7 +44,7 @@ namespace GraphicalInterface
 
         public void RecognitionCallback(RecognitionResult result)
         {
-            directoryPathTextBox.Text = "oo";
+            viewModel.RecognitionResults.Add(result);
             Trace.WriteLine("Hooray!");
         }
 
